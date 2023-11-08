@@ -1,10 +1,11 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
 #include "RenderClientApp.hpp"
+#include "VideoCapture.hpp"
 
 #include <GLFW/glfw3.h>
 #include <PacketSerialisation.h>
-
+#include <VideoLib.h>
 #include <iomanip>
 
 RenderClientApp::RenderClientApp(const nanogui::Vector2i& size, PacketMuxer& tx, PacketDemuxer& rx)
@@ -17,7 +18,19 @@ RenderClientApp::RenderClientApp(const nanogui::Vector2i& size, PacketMuxer& tx,
 
   syncWithServer(tx, rx, "ready");
 
-  preview = new VideoPreviewWindow(this, "Render Preview", rx);
+  // preview = new VideoPreviewWindow(this, "Render Preview", rx);
+
+  auto camera = new VideoCapture(tx);
+  BOOST_LOG_TRIVIAL(info) << "camera is going out of scope??";
+
+  // // --kinect set to true
+  // if (camera != NULL) {
+  //   k4a_image_t image;
+  //   captureFrame(device, image, capture, TIMEOUT_IN_MS);
+  //   // initialiseVideoStream();
+  // }
+
+
 
   // Have to manually set positions due to bug in ComboBox:
   const int margin = 10;

@@ -33,7 +33,8 @@ boost::program_options::options_description getOptions() {
   ("log-level", po::value<std::string>()->default_value("info"), "Set the log level to one of the following: 'trace', 'debug', 'info', 'warn', 'err', 'critical', 'off'.")
   ("nif-paths", po::value<std::string>()->default_value(""), "JSON file containing a mapping from menu names to paths to NIF models on the remote. Used to build the NIF selection menu.")
   ("width,w", po::value<int>()->default_value(1320), "Main window width in pixels.")
-  ("height,h", po::value<int>()->default_value(800), "Main window height in pixels.");
+  ("height,h", po::value<int>()->default_value(800), "Main window height in pixels.")
+  ("kinect,k4a", po::value<bool>()->default_value(false), "Start Kinect 4 frame capture.");
   return desc;
 }
 
@@ -74,6 +75,8 @@ jsonFileToMap(const std::string& file) {
 
 int main(int argc, char** argv) {
   auto args = parseOptions(argc, argv, getOptions());
+  // unused for now...
+  auto takeCameraFeed = args.at("kinect").as<bool>();
 
   namespace logging = boost::log;
   auto logLevel = args.at("log-level").as<std::string>();
@@ -119,7 +122,7 @@ int main(int argc, char** argv) {
     }
 
     nanogui::shutdown();
-
+ 
     // Cleanly terminate the connection:
     sender.reset();
     socket.reset();
