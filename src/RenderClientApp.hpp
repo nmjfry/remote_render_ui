@@ -22,5 +22,6 @@ public:
 private:
   PacketMuxer& sender;
   VideoPreviewWindow* preview;
+  VideoCapture* camera;
   ControlsForm* form;
 };

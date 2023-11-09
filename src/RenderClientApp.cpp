@@ -12,16 +12,16 @@ RenderClientApp::RenderClientApp(const nanogui::Vector2i& size, PacketMuxer& tx,
     : nanogui::Screen(size, "IPU Neural Render Preview", false),
       sender(tx),
       preview(nullptr),
+      camera(nullptr),
       form(nullptr) {
 
   form = new ControlsForm(this, tx, rx, preview);
 
   syncWithServer(tx, rx, "ready");
 
-  // preview = new VideoPreviewWindow(this, "Render Preview", rx);
+  preview = new VideoPreviewWindow(this, "Render Preview", rx);
 
-  auto camera = new VideoCapture(tx);
-  BOOST_LOG_TRIVIAL(info) << "camera is going out of scope??";
+  camera = new VideoCapture(tx);
 
   // // --kinect set to true
   // if (camera != NULL) {

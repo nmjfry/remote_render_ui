@@ -22,15 +22,17 @@ VideoCapture::VideoCapture(PacketMuxer &sender)
   if (device != NULL) {
     k4a_image_t frame = captureFrame(CAPTURE_TIMEOUT_IN_MS);
     if (frame != NULL) {
-      size_t w = k4a_image_get_width_pixels(frame);
-      size_t h = k4a_image_get_height_pixels(frame);
+      // infer width and height of video from capture
+      width = k4a_image_get_width_pixels(frame);
+      height = k4a_image_get_height_pixels(frame);
       k4a_image_release(frame);
 
-      BOOST_LOG_TRIVIAL(info) << "Frame height and width: " << w << " " << h;
-      initialiseVideoStream(w, h);
+      BOOST_LOG_TRIVIAL(info)
+          << "Frame height and width: " << width << " " << height;
+      initialiseVideoStream();
       startEncodeThread();
     } else {
-      BOOST_LOG_TRIVIAL(info) << "Failed to capture frame." << frame;
+      BOOST_LOG_TRIVIAL(info) << "Failed to capture frame.";
     }
   }
 }
@@ -67,8 +69,7 @@ void VideoCapture::configure() {
   }
 }
 
-void VideoCapture::initialiseVideoStream(std::size_t width,
-                                         std::size_t height) {
+void VideoCapture::initialiseVideoStream() {
   if (videoStream) {
     videoStream->AddVideoStream(width, height, 30,
                                 video::FourCc('F', 'M', 'P', '4'));
@@ -79,21 +80,26 @@ void VideoCapture::initialiseVideoStream(std::size_t width,
 }
 
 /// Send the preview image in a compressed video stream:
-bool VideoCapture::sendPreviewImage(k4a_image_t &k4_image, std::size_t width,
-                                    std::size_t height) {
+bool VideoCapture::sendPreviewImage(k4a_image_t &k4_image) {
   uint8_t *buffer = k4a_image_get_buffer(k4_image);
-  VideoFrame frame(buffer, AV_PIX_FMT_BGR24, width, height, 0);
-  return videoStream->PutVideoFrame(frame);
+  auto stride = k4a_image_get_stride_bytes(k4_image);
+  BOOST_LOG_TRIVIAL(info) << "Putting frame... ";
+  VideoFrame frame(buffer, AV_PIX_FMT_BGR24, width, height, stride);
+  if (videoStream || videoStream->IsOpen() || videoStream.get() != NULL) {
+    // currently segfaults
+    return videoStream->PutVideoFrame(frame);
+  }
+  BOOST_LOG_TRIVIAL(info) << "Video stream did not initialise properly... ";
+  return false;
 }
 
 void VideoCapture::startEncodeThread() {
-  BOOST_LOG_TRIVIAL(info) << "Video encode thread launching...";
   // Thread just encodes video frames as fast as it can capture:
   videoEncodeThread.reset(new std::thread([&]() {
     BOOST_LOG_TRIVIAL(info) << "Video encode thread launched.";
-    // while (runEncoderThread) {
-    //   encodeVideoFrame();
-    // }
+    while (runEncoderThread) {
+      encodeVideoFrame();
+    }
   }));
 }
 
@@ -111,18 +117,18 @@ void VideoCapture::stopEncodeThread() {
 }
 
 void VideoCapture::encodeVideoFrame() {
-  BOOST_LOG_TRIVIAL(info) << "Capturing frame... ";
-  // k4a_image_t frame = captureFrame(CAPTURE_TIMEOUT_IN_MS);
-  // bool ok;
-  // if (frame != NULL) {
-  //   size_t w = k4a_image_get_width_pixels(frame);
-  //   size_t h = k4a_image_get_height_pixels(frame);
-  //   ok = sendPreviewImage(frame, w, h);
-  //   k4a_image_release(frame);
-  // }
-  // if (!ok) {
-  //   BOOST_LOG_TRIVIAL(error) << ("Could not send video frame.");
-  // }
+  // throttle camera rate
+  std::this_thread::sleep_for(2ms);
+  k4a_image_t frame = captureFrame(CAPTURE_TIMEOUT_IN_MS);
+  bool ok;
+  if (frame != NULL) {
+    ok = sendPreviewImage(frame);
+    BOOST_LOG_TRIVIAL(info) << "Sent frame: " << ok;
+    k4a_image_release(frame);
+  }
+  if (!ok) {
+    BOOST_LOG_TRIVIAL(error) << ("Could not send video frame.");
+  }
 }
 
 k4a_image_t VideoCapture::captureFrame(const int32_t TIMEOUT_IN_MS) {
