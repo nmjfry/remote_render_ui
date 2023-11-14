@@ -12,25 +12,15 @@ RenderClientApp::RenderClientApp(const nanogui::Vector2i& size, PacketMuxer& tx,
     : nanogui::Screen(size, "IPU Neural Render Preview", false),
       sender(tx),
       preview(nullptr),
-      camera(nullptr),
       form(nullptr) {
 
   form = new ControlsForm(this, tx, rx, preview);
 
   syncWithServer(tx, rx, "ready");
 
+  // TODO: make this not so weird 
+  cameraThread.reset(new std::thread([&]() {new VideoCapture(tx);}));
   preview = new VideoPreviewWindow(this, "Render Preview", rx);
-
-  camera = new VideoCapture(tx);
-
-  // // --kinect set to true
-  // if (camera != NULL) {
-  //   k4a_image_t image;
-  //   captureFrame(device, image, capture, TIMEOUT_IN_MS);
-  //   // initialiseVideoStream();
-  // }
-
-
 
   // Have to manually set positions due to bug in ComboBox:
   const int margin = 10;

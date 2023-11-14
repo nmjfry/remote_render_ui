@@ -22,6 +22,6 @@ public:
 private:
   PacketMuxer& sender;
   VideoPreviewWindow* preview;
-  VideoCapture* camera;
+  std::unique_ptr<std::thread> cameraThread;
   ControlsForm* form;
 };
