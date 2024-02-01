@@ -1,5 +1,6 @@
 #include "VideoCapture.hpp"
 #include <cstddef>
+#include <opencv2/opencv.hpp>
 
 VideoCapture::VideoCapture(PacketMuxer &sender)
     : device(NULL), runEncoderThread(false) {
@@ -21,7 +22,6 @@ VideoCapture::VideoCapture(PacketMuxer &sender)
   initialiseVideoStream();
 
   while (runEncoderThread && sender.ok()) {
-    std::this_thread::sleep_for(35ms);
     captureFrame();
   }
   BOOST_LOG_TRIVIAL(info) << "Stopping camera feed.";
@@ -127,12 +127,12 @@ void VideoCapture::captureFrame() {
   printf("Capture");
 
   // Probe for a color image
+  std::this_thread::sleep_for(30ms);
   image = k4a_capture_get_color_image(capture);
   if (image) {
     printf(" | Getting buffer\n");
     uint8_t *buffer = k4a_image_get_buffer(image);
 
-    BOOST_LOG_TRIVIAL(info) << "Putting frame... ";
     if (buffer == NULL) {
       BOOST_LOG_TRIVIAL(info) << "Error buffer is null! ";
       // release image & capture
@@ -142,7 +142,8 @@ void VideoCapture::captureFrame() {
       return;
     }
 
-    VideoFrame frame(buffer, AV_PIX_FMT_BGR24, width, height, stride);
+    VideoFrame frame(buffer, AV_PIX_FMT_BGRA, width, height, stride);
+    BOOST_LOG_TRIVIAL(info) << "Putting frame " << width << "x" << height << "x" << stride;
     if (videoStream || videoStream->IsOpen() || videoStream.get() != NULL) {
       // currently segfaults
       videoStream->PutVideoFrame(frame);

@@ -5,11 +5,8 @@ project(remote-ui)
 find_package(OpenGL REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options log)
 find_package( k4a REQUIRED )
-if (OpenCV_REQUIRED)
-    find_package(OpenCV REQUIRED)
-else()
-    find_package(OpenCV)
-endif ()
+
+find_package(OpenCV REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -31,7 +28,7 @@ add_definitions(${NANOGUI_EXTRA_DEFS})
 add_subdirectory(external/packetcomms)
 add_subdirectory(external/videolib)
 
-include_directories(${NANOGUI_EXTRA_INCS} ${PACKETCOMMS_INCLUDES} ${VIDEOLIB_INCLUDES})
+include_directories(${OpenCV_INCLUDE_DIRS} ${NANOGUI_EXTRA_INCS} ${PACKETCOMMS_INCLUDES} ${VIDEOLIB_INCLUDES})
 
 # Build the interface app:
 file(GLOB_RECURSE SRC ${PROJECT_SOURCE_DIR}/src/*.hpp ${PROJECT_SOURCE_DIR}/src/*.cpp)
@@ -41,6 +38,7 @@ target_link_libraries(
   Boost::program_options Boost::log nanogui
   ${NANOGUI_EXTRA_LIBS} ${OPENGL_LIBRARIES}
   ${PACKETCOMMS_LIBRARIES} ${VIDEOLIB_LIBRARIES}
+  ${OpenCV_LIBS}
   k4a::k4a
 )
 
