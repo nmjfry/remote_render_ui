@@ -155,7 +155,8 @@ void VideoPreviewWindow::decodeVideoFrame() {
 
     // Calculate instantaneous frame rate:
     auto newFrameTime = std::chrono::steady_clock::now();
-    auto ifps = 1000.0 / std::chrono::duration_cast<std::chrono::milliseconds>(newFrameTime - m_lastFrameTime).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(newFrameTime - m_lastFrameTime).count();
+    auto ifps = 1000.0 / (std::max(elapsed, 1L));
     fps = (0.9f * fps) + (.1f * ifps);
     BOOST_LOG_TRIVIAL(trace) << "Frame rate instantaneous: " << ifps << " Fps" << std::endl;
     BOOST_LOG_TRIVIAL(debug) << "Frame rate filtered: " << fps << " Fps" << std::endl;
