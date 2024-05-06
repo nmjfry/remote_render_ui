@@ -80,6 +80,43 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   gammaSlider->callback()(gammaSlider->value());
   add_widget("Gamma", gammaSlider);
 
+
+  auto* XSlider = new nanogui::Slider(window);
+  XSlider->set_fixed_width(250);
+  XSlider->set_callback([&](float value) {
+    serialise(sender, "X", value * 1280.f);
+  });
+  XSlider->set_value(640.f / 1280.f);
+  XSlider->callback()(XSlider->value());
+  add_widget("X", XSlider);
+
+  auto* YSlider = new nanogui::Slider(window);
+  YSlider->set_fixed_width(250);
+  YSlider->set_callback([&](float value) {
+    serialise(sender, "Y", value * 720.f);
+  });
+  YSlider->set_value(360.f / 720.f);
+  YSlider->callback()(YSlider->value());
+  add_widget("Y", YSlider);
+
+  auto* lambda1Slider = new nanogui::Slider(window);
+  lambda1Slider->set_fixed_width(250);
+  lambda1Slider->set_callback([&](float value) {
+    serialise(sender, "lambda1", value * 100.f);
+  });
+  lambda1Slider->set_value(50.f / 100.f);
+  lambda1Slider->callback()(lambda1Slider->value());
+  add_widget("Lambda1", lambda1Slider);
+
+  auto* lambda2Slider = new nanogui::Slider(window);
+  lambda2Slider->set_fixed_width(250);
+  lambda2Slider->set_callback([&](float value) {
+    serialise(sender, "lambda2", value * 100.f);
+  });
+  lambda2Slider->set_value(50.f / 100.f);
+  lambda2Slider->callback()(lambda2Slider->value());
+  add_widget("Lambda2", lambda2Slider);
+  
   // Info/stats
   add_group("Info/Stats");
 
