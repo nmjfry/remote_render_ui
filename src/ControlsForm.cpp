@@ -104,7 +104,7 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   lambda1Slider->set_callback([&](float value) {
     serialise(sender, "lambda1", value * 100.f);
   });
-  lambda1Slider->set_value(50.f / 100.f);
+  lambda1Slider->set_value(500.f / 10.f);
   lambda1Slider->callback()(lambda1Slider->value());
   add_widget("Lambda1", lambda1Slider);
 
@@ -113,7 +113,7 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   lambda2Slider->set_callback([&](float value) {
     serialise(sender, "lambda2", value * 100.f);
   });
-  lambda2Slider->set_value(50.f / 100.f);
+  lambda2Slider->set_value(500.f / 10.f);
   lambda2Slider->callback()(lambda2Slider->value());
   add_widget("Lambda2", lambda2Slider);
   
