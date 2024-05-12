@@ -5,6 +5,8 @@
 #include <boost/log/trivial.hpp>
 #include <cstddef>
 #include <k4a/k4a.h>
+#include <memory>
+#include <atomic>
 
 /// A camera handler for k4.
 class VideoCapture {
