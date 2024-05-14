@@ -99,6 +99,15 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   YSlider->callback()(YSlider->value());
   add_widget("Y", YSlider);
 
+  auto* ZSlider = new nanogui::Slider(window);
+  ZSlider->set_fixed_width(250);
+  ZSlider->set_callback([&](float value) {
+    serialise(sender, "Z", value * 1280.f);
+  });
+  ZSlider->set_value(640.f / 1280.f);
+  ZSlider->callback()(ZSlider->value());
+  add_widget("Z", ZSlider);
+
   auto* lambda1Slider = new nanogui::Slider(window);
   lambda1Slider->set_fixed_width(250);
   lambda1Slider->set_callback([&](float value) {
