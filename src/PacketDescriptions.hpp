@@ -18,6 +18,7 @@ const std::vector<std::string> packetTypes {
     "gamma",               // Update tone-map gamma (client -> server)
     "X",                   // Update gaussian mean x (client -> server)
     "Y",                   // Update gaussian mean y (client -> server) 
+    "Z",                   // Update gaussian mean z (client -> server)
     "lambda1",             // Update gaussian lambda1 (client -> server)
     "lambda2",             // Update gaussian lambda2 (client -> server)
     "fov",                 // Update field-of-view (bi-directional)
