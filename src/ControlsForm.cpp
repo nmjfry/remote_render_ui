@@ -39,6 +39,14 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   });
   add_widget("Env NIF Rotation", rotationWheel);
 
+  auto* rotationWheel2 = new Rotator(window);
+  rotationWheel2->set_callback([&](float value) {
+    float angle = value/(2.f*M_PI) * 360.f;
+    serialise(sender, "env_rotation_2", angle);
+  });
+  add_widget("Env NIF Rotation", rotationWheel2);
+
+
   // Camera controls
   add_group("Camera Parameters");
   fovSlider = new nanogui::Slider(window);

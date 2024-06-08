@@ -14,6 +14,7 @@ const std::vector<std::string> packetTypes {
     "detach",              // Detach the remote-ui but continue: server can destroy the
                            // communication interface and continue (client -> server)
     "env_rotation",        // Update environment light rotation (client -> server)
+    "env_rotation_2",        // Update environment light rotation (client -> server)
     "exposure",            // Update tone-map exposure (client -> server)
     "gamma",               // Update tone-map gamma (client -> server)
     "X",                   // Update gaussian mean x (client -> server)
