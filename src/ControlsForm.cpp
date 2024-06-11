@@ -102,9 +102,9 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   auto* ZSlider = new nanogui::Slider(window);
   ZSlider->set_fixed_width(250);
   ZSlider->set_callback([&](float value) {
-    serialise(sender, "Z", value * 720.f);
+    serialise(sender, "Z", value * 1280.f);
   });
-  ZSlider->set_value(360.f / 720.f);
+  ZSlider->set_value(640.f / 1280.f);
   ZSlider->callback()(ZSlider->value());
   add_widget("Z", ZSlider);
 
