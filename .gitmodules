@@ -7,3 +7,6 @@
 [submodule "external/videolib"]
 	path = external/videolib
 	url = https://github.com/markp-gc/videolib.git
+[submodule "external/myguilib/external/imgui"]
+	path = external/myguilib/external/imgui
+	url = git@github.com:ocornut/imgui.git

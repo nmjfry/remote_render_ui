@@ -8,6 +8,8 @@ find_package( k4a REQUIRED )
 
 find_package(OpenCV REQUIRED)
 
+find_package(assimp REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -27,19 +29,31 @@ add_definitions(${NANOGUI_EXTRA_DEFS})
 # Configure packetcomms suboroject:
 add_subdirectory(external/packetcomms)
 add_subdirectory(external/videolib)
+add_subdirectory(external/myguilib)
 
-include_directories(${OpenCV_INCLUDE_DIRS} ${NANOGUI_EXTRA_INCS} ${PACKETCOMMS_INCLUDES} ${VIDEOLIB_INCLUDES})
+include_directories(${OpenCV_INCLUDE_DIRS} ${NANOGUI_EXTRA_INCS}
+ ${PACKETCOMMS_INCLUDES} ${VIDEOLIB_INCLUDES} ${MYGUI_INCLUDES})
+
+ message(STATUS "MYGUI_INCLUDES path: ${MYGUI_INCLUDES}")
+
 
 # Build the interface app:
 file(GLOB_RECURSE SRC ${PROJECT_SOURCE_DIR}/src/*.hpp ${PROJECT_SOURCE_DIR}/src/*.cpp)
 add_executable(remote-ui ${SRC})
+
+# target_include_directories(remote_ui PRIVATE ${MYGUI_INCLUDES})
+
 target_link_libraries(
   remote-ui
+  PRIVATE
   Boost::program_options Boost::log nanogui
   ${NANOGUI_EXTRA_LIBS} ${OPENGL_LIBRARIES}
   ${PACKETCOMMS_LIBRARIES} ${VIDEOLIB_LIBRARIES}
   ${OpenCV_LIBS}
+  ${ASSIMP_LIBRARIES}
   k4a::k4a
+  ${MYGUI_LIBS}
+  dl
 )
 
 target_compile_definitions(remote-ui PRIVATE -DBOOST_LOG_DYN_LINK)

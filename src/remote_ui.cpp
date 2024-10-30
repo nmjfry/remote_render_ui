@@ -2,6 +2,8 @@
 
 #include <nanogui/nanogui.h>
 
+#include "DebugGUI.h"
+
 #include <PacketComms.h>
 #include <network/TcpSocket.h>
 
@@ -108,6 +110,38 @@ int main(int argc, char** argv) {
 
     auto sender = std::make_unique<PacketMuxer>(*socket, packets::packetTypes);
     auto receiver = std::make_unique<PacketDemuxer>(*socket, packets::packetTypes);
+
+    DebugGUI gui;
+
+     if (!gui.Initialize("Graphics Debug GUI", 1280, 720))
+        return 1;
+
+    bool show_preferences = true;
+    bool show_model_viewer = true;
+
+    
+    // Main loop
+    while (gui.BeginFrame()) {
+
+        // Show ImGui demo window for reference
+        // ImGui::ShowDemoWindow();
+
+        
+        // Show preferences window
+        gui.ShowPreferencesWindow(&show_preferences);
+
+        
+        // Example: Update image texture with new data
+        // unsigned char* image_data = GetImageData(); // Your image data source
+        // gui.UpdateImageTexture(image_data, width, height);
+        
+        // Example: Show image viewer
+        // gui.ShowImageViewer("Image Debug", image_texture, width, height);
+        
+        gui.EndFrame();
+    }
+
+    gui.Cleanup();
 
     nanogui::init();
 
