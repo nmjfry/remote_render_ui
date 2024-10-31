@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <nanogui/nanogui.h>
-
 #include "VideoClient.hpp"
 
 /// Window that receives an encoded video stream and displays
@@ -11,18 +9,14 @@
 /// of the image. Video is decoded in a separate thread to keep
 /// the UI widgets responsive (although their effect will be
 /// limited by the video rate).
-class VideoPreviewWindow : public nanogui::Window {
+class VideoPreview {
 public:
-  VideoPreviewWindow(nanogui::Screen* screen, const std::string& title, PacketDemuxer& receiver);
+  VideoPreview(const std::string& title, PacketDemuxer& receiver);
 
-  virtual ~VideoPreviewWindow();
-
-  virtual void draw(NVGcontext* ctx);
+  virtual ~VideoPreview();
 
   double getVideoBandwidthMbps() { return mbps; }
   double getFrameRate() { return fps; }
-
-  void reset() { imageView->reset(); }
 
   void setRawBufferData(std::vector<float>& buffer) {
     rawBuffer = buffer;
@@ -44,12 +38,10 @@ private:
   std::unique_ptr<VideoClient> videoClient;
   std::vector<std::uint8_t> bgrBuffer;
   std::vector<float> rawBuffer;
-  nanogui::Texture* texture;
-  nanogui::ImageView* imageView;
   double mbps;
   std::chrono::steady_clock::time_point m_lastFrameTime;
   double fps;
-
+  int channels;
   std::unique_ptr<std::thread> videoDecodeThread;
   std::mutex bufferMutex;
   std::atomic<bool> newFrameDecoded;

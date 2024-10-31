@@ -29,7 +29,7 @@ add_definitions(${NANOGUI_EXTRA_DEFS})
 # Configure packetcomms suboroject:
 add_subdirectory(external/packetcomms)
 add_subdirectory(external/videolib)
-add_subdirectory(external/myguilib)
+add_subdirectory(external/debuggui)
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${NANOGUI_EXTRA_INCS}
  ${PACKETCOMMS_INCLUDES} ${VIDEOLIB_INCLUDES} ${MYGUI_INCLUDES})
@@ -52,7 +52,7 @@ target_link_libraries(
   ${OpenCV_LIBS}
   ${ASSIMP_LIBRARIES}
   k4a::k4a
-  ${MYGUI_LIBS}
+  DebugGUI
   dl
 )
 

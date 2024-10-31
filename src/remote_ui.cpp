@@ -1,7 +1,5 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
-#include <nanogui/nanogui.h>
-
 #include "DebugGUI.h"
 
 #include <PacketComms.h>
@@ -20,9 +18,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include "ControlsForm.hpp"
-#include "RenderClientApp.hpp"
-#include "VideoPreviewWindow.hpp"
+#include "RenderClient.hpp"
 #include "PacketDescriptions.hpp"
 
 boost::program_options::options_description getOptions() {
@@ -113,13 +109,17 @@ int main(int argc, char** argv) {
 
     DebugGUI gui;
 
-     if (!gui.Initialize("Graphics Debug GUI", 1280, 720))
-        return 1;
+    RenderClient rc(*sender, *receiver);
+
+    const auto w = args.at("width").as<int>();
+    const auto h = args.at("height").as<int>();
+
+
+    if (!gui.Initialize("Graphics Debug GUI", w, h))
+      return 1;
 
     bool show_preferences = true;
-    bool show_model_viewer = true;
 
-    
     // Main loop
     while (gui.BeginFrame()) {
 
@@ -142,20 +142,6 @@ int main(int argc, char** argv) {
     }
 
     gui.Cleanup();
-
-    nanogui::init();
-
-    {
-      const auto w = args.at("width").as<int>();
-      const auto h = args.at("height").as<int>();
-      nanogui::Vector2i screenSize(w, h);
-      RenderClientApp app(screenSize, *sender, *receiver);
-      app.draw_all();
-      app.set_visible(true);
-      nanogui::mainloop(1 / 60.f * 1000);
-    }
-
-    nanogui::shutdown();
  
     // Cleanly terminate the connection:
     sender.reset();
