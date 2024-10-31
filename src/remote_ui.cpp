@@ -109,35 +109,33 @@ int main(int argc, char** argv) {
 
     DebugGUI gui;
 
+    // instantiate Render client (connects to server) and video preview that collects frames 
     RenderClient rc(*sender, *receiver);
+    VideoPreview vp("Render Preview", *receiver);
 
     const auto w = args.at("width").as<int>();
     const auto h = args.at("height").as<int>();
-
 
     if (!gui.Initialize("Graphics Debug GUI", w, h))
       return 1;
 
     bool show_preferences = true;
+    bool show_image_viewer = true;
 
     // Main loop
     while (gui.BeginFrame()) {
-
-        // Show ImGui demo window for reference
-        // ImGui::ShowDemoWindow();
-
         
         // Show preferences window
         gui.ShowPreferencesWindow(&show_preferences);
 
-        
+         // Display the image viewer if needed
+        if (show_image_viewer) {
+            gui.ShowImageViewer("Image Viewer");
+        }
+
         // Example: Update image texture with new data
-        // unsigned char* image_data = GetImageData(); // Your image data source
-        // gui.UpdateImageTexture(image_data, width, height);
-        
-        // Example: Show image viewer
-        // gui.ShowImageViewer("Image Debug", image_texture, width, height);
-        
+        gui.UpdateImageTexture(vp.getBgrBuffer(), vp.getFrameWidth(), vp.getFrameHeight());
+
         gui.EndFrame();
     }
 

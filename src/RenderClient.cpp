@@ -9,12 +9,9 @@
 #include <iomanip>
 
 RenderClient::RenderClient(PacketMuxer& tx, PacketDemuxer& rx)
-    : sender(tx),
-      preview(nullptr) {
+    : sender(tx) {
 
   syncWithServer(tx, rx, "ready");
-
-  preview = new VideoPreview("Render Preview", rx);
 }
 
 RenderClient::~RenderClient() {

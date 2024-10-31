@@ -17,6 +17,9 @@ public:
 
   double getVideoBandwidthMbps() { return mbps; }
   double getFrameRate() { return fps; }
+  size_t getFrameHeight() { return videoClient->getFrameHeight(); }
+  size_t getFrameWidth() { return videoClient->getFrameWidth(); }
+
 
   void setRawBufferData(std::vector<float>& buffer) {
     rawBuffer = buffer;
@@ -24,6 +27,10 @@ public:
 
   void displayRawValues(bool displayRaw) {
     showRawPixelValues = displayRaw;
+  }
+
+  unsigned char* getBgrBuffer() {
+    return bgrBuffer.data();
   }
 
 protected:

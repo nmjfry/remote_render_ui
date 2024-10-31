@@ -11,6 +11,5 @@ public:
 
 private:
   PacketMuxer& sender;
-  VideoPreview* preview;
   std::unique_ptr<std::thread> cameraThread;
 };
