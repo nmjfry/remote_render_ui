@@ -15,7 +15,8 @@ VideoPreview::VideoPreview(
       fps(0.f),
       newFrameDecoded(false),
       runDecoderThread(true),
-      showRawPixelValues(false) {
+      showRawPixelValues(false),
+      channels(3) {
   using namespace std::chrono_literals;
   bool videoOk = videoClient->initialiseVideoStream(5s);
 
@@ -23,6 +24,17 @@ VideoPreview::VideoPreview(
     // Allocate a buffer to store the decoded and converted images:
     auto w = videoClient->getFrameWidth();
     auto h = videoClient->getFrameHeight();
+
+    bgrBuffer.resize(w * h * channels);
+
+    for (auto c = 0; c < bgrBuffer.size(); c += channels) {
+      bgrBuffer[c + 0] = 255;
+      bgrBuffer[c + 1] = 0;
+      bgrBuffer[c + 2] = 0;
+      if (channels == 4) {
+        bgrBuffer[c + 3] = 128;
+      }
+    }
 
     startDecodeThread();
 

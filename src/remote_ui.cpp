@@ -133,8 +133,10 @@ int main(int argc, char** argv) {
             gui.ShowImageViewer("Image Viewer");
         }
 
-        // Example: Update image texture with new data
-        gui.UpdateImageTexture(vp.getBgrBuffer(), vp.getFrameWidth(), vp.getFrameHeight());
+        {
+          auto lock = vp.acquireBufferLock();
+          gui.UpdateImageTexture(vp.getBgrBuffer(), vp.getFrameWidth(), vp.getFrameHeight());
+        }
 
         gui.EndFrame();
     }

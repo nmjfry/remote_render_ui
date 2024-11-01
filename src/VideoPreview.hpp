@@ -4,6 +4,10 @@
 
 #include "VideoClient.hpp"
 
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+
 /// Window that receives an encoded video stream and displays
 /// it in a nanogui::ImageView that allows panning and zooming
 /// of the image. Video is decoded in a separate thread to keep
@@ -27,6 +31,10 @@ public:
 
   void displayRawValues(bool displayRaw) {
     showRawPixelValues = displayRaw;
+  }
+
+  std::unique_lock<std::mutex> acquireBufferLock() {
+      return std::unique_lock<std::mutex>(bufferMutex);
   }
 
   unsigned char* getBgrBuffer() {
