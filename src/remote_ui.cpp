@@ -127,10 +127,23 @@ int main(int argc, char** argv) {
         
         // Show preferences window
         gui.ShowPreferencesWindow(&show_preferences);
+        
 
          // Display the image viewer if needed
         if (show_image_viewer) {
             gui.ShowImageViewer("Image Viewer");
+
+            auto prefs = gui.getPrefs();
+            serialise(*sender, "env_rotation", prefs.envRotationDegrees);
+            serialise(*sender, "env_rotation_2", prefs.envRotationDegrees2);
+            serialise(*sender, "X", prefs.X);
+            serialise(*sender, "Y", prefs.Y);
+            serialise(*sender, "Z", prefs.Z);
+            serialise(*sender, "lambda1", prefs.lambda1);
+            serialise(*sender, "lambda2", prefs.lambda2);
+            serialise(*sender, "fov", prefs.fov);
+            serialise(*sender, "device", prefs.device);
+
         }
 
         {
