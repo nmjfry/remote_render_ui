@@ -29,7 +29,7 @@ The following dependencies are cloned and built as submodules (so do not need to
 Install the dependencies above and then build using CMake:
 
 ```
-git clone --recursive https://github.com/markp-gc/remote_render_ui
+git clone --recursive https://github.com/nmjfry/remote_render_ui.git
 mkdir remote_render_ui/build
 cd remote_render_ui/build
 cmake -G Ninja ..
