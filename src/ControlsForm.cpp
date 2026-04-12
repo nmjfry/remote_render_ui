@@ -30,24 +30,10 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
 {
   window = add_window(nanogui::Vector2i(10, 10), "Control");
 
-  // Scene controls
-  add_group("Scene Parameters");
-  auto* rotationWheel = new Rotator(window);
-  rotationWheel->set_callback([&](float value) {
-    float angle = value/(2.f*M_PI) * 360.f;
-    serialise(sender, "env_rotation", angle);
-  });
-  add_widget("Env NIF Rotation", rotationWheel);
-
-  auto* rotationWheel2 = new Rotator(window);
-  rotationWheel2->set_callback([&](float value) {
-    float angle = value/(2.f*M_PI) * 360.f;
-    serialise(sender, "env_rotation_2", angle);
-  });
-  add_widget("Env NIF Rotation", rotationWheel2);
-
-
-  // Camera controls
+  // Camera controls — pose is driven by WASD + right-mouse-drag in the main
+  // window (see RenderClientApp). Click inside the render window to focus it,
+  // then W/A/S/D (or arrow keys) to translate, Q/E for down/up, Space to reset,
+  // hold Right-Mouse and drag to look around, Shift to sprint.
   add_group("Camera Parameters");
   fovSlider = new nanogui::Slider(window);
   fovSlider->set_fixed_width(250);
@@ -88,33 +74,6 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   gammaSlider->callback()(gammaSlider->value());
   add_widget("Gamma", gammaSlider);
 
-
-  auto* XSlider = new nanogui::Slider(window);
-  XSlider->set_fixed_width(250);
-  XSlider->set_callback([&](float value) {
-    serialise(sender, "X", value * 1280.f);
-  });
-  XSlider->set_value(640.f / 1280.f);
-  XSlider->callback()(XSlider->value());
-  add_widget("X", XSlider);
-
-  auto* YSlider = new nanogui::Slider(window);
-  YSlider->set_fixed_width(250);
-  YSlider->set_callback([&](float value) {
-    serialise(sender, "Y", value * 720.f);
-  });
-  YSlider->set_value(360.f / 720.f);
-  YSlider->callback()(YSlider->value());
-  add_widget("Y", YSlider);
-
-  auto* ZSlider = new nanogui::Slider(window);
-  ZSlider->set_fixed_width(250);
-  ZSlider->set_callback([&](float value) {
-    serialise(sender, "Z", value * 720.f);
-  });
-  ZSlider->set_value(360.f / 720.f);
-  ZSlider->callback()(ZSlider->value());
-  add_widget("Z", ZSlider);
 
   auto* lambda1Slider = new nanogui::Slider(window);
   lambda1Slider->set_fixed_width(250);

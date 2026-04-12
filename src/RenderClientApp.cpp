@@ -7,6 +7,7 @@
 #include <PacketSerialisation.h>
 #include <VideoLib.h>
 #include <iomanip>
+#include <cmath>
 
 RenderClientApp::RenderClientApp(const nanogui::Vector2i& size, PacketMuxer& tx, PacketDemuxer& rx)
     : nanogui::Screen(size, "IPU Neural Render Preview", false),
@@ -29,6 +30,8 @@ RenderClientApp::RenderClientApp(const nanogui::Vector2i& size, PacketMuxer& tx,
   pos[0] += margin + preview->width();
   form->set_position(nanogui::Vector2i(pos));
   perform_layout();
+
+  lastDrawTime = glfwGetTime();
 }
 
 RenderClientApp::~RenderClientApp() {
@@ -37,9 +40,41 @@ RenderClientApp::~RenderClientApp() {
   serialise(sender, "detach", true);
 }
 
+void RenderClientApp::sendPose() {
+  // The server expects world-space offsets (X, Y, Z) and pitch/yaw in degrees
+  // (envRotationDegrees, envRotationDegrees2).
+  serialise(sender, "X", camX);
+  serialise(sender, "Y", camY);
+  serialise(sender, "Z", camZ);
+  serialise(sender, "env_rotation",   pitchDeg);
+  serialise(sender, "env_rotation_2", yawDeg);
+}
+
 bool RenderClientApp::keyboard_event(int key, int scancode, int action, int modifiers) {
   if (Screen::keyboard_event(key, scancode, action, modifiers)) {
     return true;
+  }
+
+  // Track shift state for sprint:
+  if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_RIGHT_SHIFT) {
+    keyShift = (action != GLFW_RELEASE);
+    return true;
+  }
+
+  // WASD / arrow keys — hold to move; we process held state in draw() so motion
+  // stays smooth regardless of OS key-repeat rate.
+  auto setHeld = [&](bool& flag) {
+    if (action == GLFW_PRESS)   flag = true;
+    if (action == GLFW_RELEASE) flag = false;
+  };
+
+  switch (key) {
+    case GLFW_KEY_W: case GLFW_KEY_UP:    setHeld(keyW); return true;
+    case GLFW_KEY_S: case GLFW_KEY_DOWN:  setHeld(keyS); return true;
+    case GLFW_KEY_A: case GLFW_KEY_LEFT:  setHeld(keyA); return true;
+    case GLFW_KEY_D: case GLFW_KEY_RIGHT: setHeld(keyD); return true;
+    case GLFW_KEY_Q:                      setHeld(keyQ); return true;
+    case GLFW_KEY_E:                      setHeld(keyE); return true;
   }
 
   if (action == GLFW_PRESS) {
@@ -51,12 +86,96 @@ bool RenderClientApp::keyboard_event(int key, int scancode, int action, int modi
       set_visible(false);
       return true;
     }
+    // Reset pose with Space:
+    if (key == GLFW_KEY_SPACE) {
+      camX = camY = camZ = 0.f;
+      pitchDeg = yawDeg = 0.f;
+      sendPose();
+      return true;
+    }
   }
 
   return false;
 }
 
+bool RenderClientApp::mouse_button_event(const nanogui::Vector2i& p,
+                                         int button, bool down, int modifiers) {
+  if (Screen::mouse_button_event(p, button, down, modifiers)) {
+    return true;
+  }
+  if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+    rightMouseHeld = down;
+    return true;
+  }
+  return false;
+}
+
+bool RenderClientApp::mouse_motion_event(const nanogui::Vector2i& p,
+                                         const nanogui::Vector2i& rel,
+                                         int button, int modifiers) {
+  if (Screen::mouse_motion_event(p, rel, button, modifiers)) {
+    return true;
+  }
+  // Right-mouse drag rotates the camera (typical FPS convention would be free
+  // mouse-look, but we avoid cursor capture so nanogui controls still work).
+  if (rightMouseHeld) {
+    const float sensitivity = 0.25f;
+    yawDeg   += rel.x() * sensitivity;
+    pitchDeg += rel.y() * sensitivity;
+    // Clamp pitch to avoid gimbal flip:
+    if (pitchDeg >  89.f) pitchDeg =  89.f;
+    if (pitchDeg < -89.f) pitchDeg = -89.f;
+    sendPose();
+    return true;
+  }
+  return false;
+}
+
 void RenderClientApp::draw(NVGcontext* ctx) {
+  // Frame-rate-independent WASD movement. We convert camera-local movement
+  // (W=forward, D=right, E=up) into world-space deltas using the current yaw.
+  // Pitch doesn't contribute to horizontal strafe movement, matching typical
+  // FPS "walk" behaviour.
+  double now = glfwGetTime();
+  float dt = float(now - lastDrawTime);
+  lastDrawTime = now;
+  if (dt > 0.1f) dt = 0.1f; // clamp big gaps (e.g. first frame)
+
+  if (keyW || keyA || keyS || keyD || keyQ || keyE) {
+    // Speed is tuned for normalised scenes (~1 unit across). Shift = sprint.
+    const float speed = (keyShift ? 4.0f : 1.2f);
+
+    const float yawRad = float(yawDeg * M_PI / 180.f);
+    const float sy = std::sin(yawRad);
+    const float cy = std::cos(yawRad);
+
+    // The server applies R_yaw to the scene in view space (the inverse of the
+    // user's camera rotation in world). For positive yawDeg the user turns
+    // RIGHT in world, so their forward/right vectors are:
+    //   forward = ( sin(yaw), 0, -cos(yaw))
+    //   right   = ( cos(yaw), 0,  sin(yaw))
+    float fx =  sy, fz = -cy;
+    float rx =  cy, rz =  sy;
+
+    float dx = 0.f, dy = 0.f, dz = 0.f;
+    if (keyW) { dx += fx; dz += fz; }
+    if (keyS) { dx -= fx; dz -= fz; }
+    if (keyD) { dx += rx; dz += rz; }
+    if (keyA) { dx -= rx; dz -= rz; }
+    if (keyE) { dy += 1.f; }
+    if (keyQ) { dy -= 1.f; }
+
+    // Normalise diagonal speed:
+    float len = std::sqrt(dx * dx + dy * dy + dz * dz);
+    if (len > 1e-6f) {
+      float k = speed * dt / len;
+      camX += dx * k;
+      camY += dy * k;
+      camZ += dz * k;
+      sendPose();
+    }
+  }
+
   if (preview != nullptr && form != nullptr) {
     // Update bandwidth text before display:
     std::stringstream ss;

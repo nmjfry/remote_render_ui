@@ -144,7 +144,7 @@ void VideoCapture::captureFrame() {
 
     VideoFrame frame(buffer, AV_PIX_FMT_BGRA, width, height, stride);
     BOOST_LOG_TRIVIAL(info) << "Putting frame " << width << "x" << height << "x" << stride;
-    if (videoStream || videoStream->IsOpen() || videoStream.get() != NULL) {
+    if (videoStream || videoStream.get() != NULL) {
       // currently segfaults
       videoStream->PutVideoFrame(frame);
     } else {

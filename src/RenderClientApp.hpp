@@ -16,10 +16,32 @@ public:
   virtual ~RenderClientApp();
 
   virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
+  virtual bool mouse_motion_event(const nanogui::Vector2i& p,
+                                  const nanogui::Vector2i& rel,
+                                  int button, int modifiers);
+  virtual bool mouse_button_event(const nanogui::Vector2i& p,
+                                  int button, bool down, int modifiers);
 
   virtual void draw(NVGcontext* ctx);
 
 private:
+  // ---- FPS camera state (world-space offset from initial scene view) ----
+  float camX = 0.f, camY = 0.f, camZ = 0.f;
+  float pitchDeg = 0.f, yawDeg = 0.f;
+
+  // Held keys for WASD-style movement (updated each frame in draw()):
+  bool keyW = false, keyA = false, keyS = false, keyD = false;
+  bool keyQ = false, keyE = false;
+  bool keyShift = false;
+
+  // Mouse-look state: right-click and drag to rotate:
+  bool rightMouseHeld = false;
+
+  // Timing for frame-rate-independent movement:
+  double lastDrawTime = 0.0;
+
+  void sendPose();
+
   PacketMuxer& sender;
   VideoPreviewWindow* preview;
   std::unique_ptr<std::thread> cameraThread;
