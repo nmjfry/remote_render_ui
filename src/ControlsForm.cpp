@@ -30,10 +30,10 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
 {
   window = add_window(nanogui::Vector2i(10, 10), "Control");
 
-  // Camera controls — pose is driven by WASD + right-mouse-drag in the main
-  // window (see RenderClientApp). Click inside the render window to focus it,
-  // then W/A/S/D (or arrow keys) to translate, Q/E for down/up, Space to reset,
-  // hold Right-Mouse and drag to look around, Shift to sprint.
+  // Camera controls — pose is driven by WASD + click-drag inside the preview
+  // window (see RenderClientApp). W/A/S/D or arrow keys to translate, Q/E for
+  // down/up, Space to reset, Left-click and drag inside the preview to look
+  // around, Shift to sprint.
   add_group("Camera Parameters");
   fovSlider = new nanogui::Slider(window);
   fovSlider->set_fixed_width(250);

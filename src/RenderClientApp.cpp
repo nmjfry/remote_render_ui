@@ -98,13 +98,28 @@ bool RenderClientApp::keyboard_event(int key, int scancode, int action, int modi
   return false;
 }
 
+// Check whether a screen-space point is inside the preview window's rect.
+// Preview is a nanogui::Window whose position() is in screen coords.
+static bool insidePreview(const nanogui::Widget* preview, const nanogui::Vector2i& p) {
+  if (!preview) return false;
+  auto pos  = preview->position();
+  auto size = preview->size();
+  return p.x() >= pos.x() && p.x() < pos.x() + size.x()
+      && p.y() >= pos.y() && p.y() < pos.y() + size.y();
+}
+
 bool RenderClientApp::mouse_button_event(const nanogui::Vector2i& p,
                                          int button, bool down, int modifiers) {
-  if (Screen::mouse_button_event(p, button, down, modifiers)) {
+  // Left-click inside the preview area → start camera-look drag.
+  // We MUST intercept this before dispatching to children, otherwise the
+  // preview Window (a nanogui::Window) eats the click and may start dragging
+  // itself.
+  if (button == GLFW_MOUSE_BUTTON_LEFT && insidePreview(preview, p)) {
+    lookDragActive = down;
     return true;
   }
-  if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-    rightMouseHeld = down;
+  // All other clicks (ControlsForm, sliders, etc.) go to nanogui as normal.
+  if (Screen::mouse_button_event(p, button, down, modifiers)) {
     return true;
   }
   return false;
@@ -113,22 +128,17 @@ bool RenderClientApp::mouse_button_event(const nanogui::Vector2i& p,
 bool RenderClientApp::mouse_motion_event(const nanogui::Vector2i& p,
                                          const nanogui::Vector2i& rel,
                                          int button, int modifiers) {
-  if (Screen::mouse_motion_event(p, rel, button, modifiers)) {
-    return true;
-  }
-  // Right-mouse drag rotates the camera (typical FPS convention would be free
-  // mouse-look, but we avoid cursor capture so nanogui controls still work).
-  if (rightMouseHeld) {
+  // Active look-drag gets priority — don't let nanogui process the motion.
+  if (lookDragActive) {
     const float sensitivity = 0.25f;
     yawDeg   += rel.x() * sensitivity;
     pitchDeg += rel.y() * sensitivity;
-    // Clamp pitch to avoid gimbal flip:
     if (pitchDeg >  89.f) pitchDeg =  89.f;
     if (pitchDeg < -89.f) pitchDeg = -89.f;
     sendPose();
     return true;
   }
-  return false;
+  return Screen::mouse_motion_event(p, rel, button, modifiers);
 }
 
 void RenderClientApp::draw(NVGcontext* ctx) {

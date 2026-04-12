@@ -34,8 +34,10 @@ private:
   bool keyQ = false, keyE = false;
   bool keyShift = false;
 
-  // Mouse-look state: right-click and drag to rotate:
-  bool rightMouseHeld = false;
+  // Mouse-look state: left-click inside the preview starts a look-drag.
+  // The click is consumed before nanogui's Window sees it, so the window
+  // does not move.
+  bool lookDragActive = false;
 
   // Timing for frame-rate-independent movement:
   double lastDrawTime = 0.0;
