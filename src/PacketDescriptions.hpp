@@ -25,6 +25,8 @@ const std::vector<std::string> packetTypes {
     "fov",                 // Update field-of-view (bi-directional)
     "render_preview",      // used to send compressed video packets
                            // for render preview (server -> client)
+    "render_time",         // server-measured render time in milliseconds (server -> client)
+    "screenshot",          // client asks the server to save a paired framebuffer + pose JSON
     "ready",               // Used to sync with the other side once all other subscribers are ready (bi-directional)
     "tile_histogram",      // Histogram tile workload distribution (server -> client)
     "device",              // Tell server which device to use (cpu, ipu) (client -> server)

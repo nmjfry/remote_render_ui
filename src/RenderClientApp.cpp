@@ -93,6 +93,11 @@ bool RenderClientApp::keyboard_event(int key, int scancode, int action, int modi
       sendPose();
       return true;
     }
+    // Toggle inverted-Y mouse-look with Y:
+    if (key == GLFW_KEY_Y) {
+      invertPitch = !invertPitch;
+      return true;
+    }
   }
 
   return false;
@@ -131,8 +136,9 @@ bool RenderClientApp::mouse_motion_event(const nanogui::Vector2i& p,
   // Active look-drag gets priority — don't let nanogui process the motion.
   if (lookDragActive) {
     const float sensitivity = 0.25f;
+    const float pitchSign = invertPitch ? -1.f : 1.f;
     yawDeg   += rel.x() * sensitivity;
-    pitchDeg += rel.y() * sensitivity;
+    pitchDeg += rel.y() * sensitivity * pitchSign;
     if (pitchDeg >  89.f) pitchDeg =  89.f;
     if (pitchDeg < -89.f) pitchDeg = -89.f;
     sendPose();
@@ -152,28 +158,35 @@ void RenderClientApp::draw(NVGcontext* ctx) {
   if (dt > 0.1f) dt = 0.1f; // clamp big gaps (e.g. first frame)
 
   if (keyW || keyA || keyS || keyD || keyQ || keyE) {
-    // Speed is tuned for normalised scenes (~1 unit across). Shift = sprint.
-    const float speed = (keyShift ? 4.0f : 1.2f);
+    // Speed in fractions of the scene diagonal per second (the server
+    // multiplies by the scene scale). 0.3/s ≈ crosses the scene in ~3 s.
+    const float speed = (keyShift ? 1.0f : 0.3f);
 
-    const float yawRad = float(yawDeg * M_PI / 180.f);
-    const float sy = std::sin(yawRad);
-    const float cy = std::cos(yawRad);
+    const float yawRad   = float(yawDeg   * M_PI / 180.f);
+    const float pitchRad = float(pitchDeg * M_PI / 180.f);
+    const float sy = std::sin(yawRad),   cy = std::cos(yawRad);
+    const float sp = std::sin(pitchRad), cp = std::cos(pitchRad);
 
-    // The server applies R_yaw to the scene in view space (the inverse of the
-    // user's camera rotation in world). For positive yawDeg the user turns
-    // RIGHT in world, so their forward/right vectors are:
-    //   forward = ( sin(yaw), 0, -cos(yaw))
-    //   right   = ( cos(yaw), 0,  sin(yaw))
-    float fx =  sy, fz = -cy;
-    float rx =  cy, rz =  sy;
+    // Camera-relative axes in world space. The server applies R_pitch * R_yaw
+    // to the scene in view space, which is the inverse of the user's camera
+    // rotation in world. Undoing those rotations on (0,0,-1) / (1,0,0) / (0,1,0)
+    // gives the user's local forward / right / up in world coords:
+    //   forward = ( sin(yaw)·cos(pitch), -sin(pitch), -cos(yaw)·cos(pitch))
+    //   right   = ( cos(yaw),             0,           sin(yaw)          )
+    //   up      = ( sin(yaw)·sin(pitch),  cos(pitch), -cos(yaw)·sin(pitch))
+    // Right stays horizontal (standard FPS strafe); forward/up include pitch so
+    // W / Q / E fly in the direction the user is actually looking.
+    const float fx = sy * cp, fy = -sp, fz = -cy * cp;
+    const float rx = cy,       ry = 0.f, rz =  sy;
+    const float ux = sy * sp,  uy = cp,  uz = -cy * sp;
 
     float dx = 0.f, dy = 0.f, dz = 0.f;
-    if (keyW) { dx += fx; dz += fz; }
-    if (keyS) { dx -= fx; dz -= fz; }
-    if (keyD) { dx += rx; dz += rz; }
-    if (keyA) { dx -= rx; dz -= rz; }
-    if (keyE) { dy += 1.f; }
-    if (keyQ) { dy -= 1.f; }
+    if (keyW) { dx += fx; dy += fy; dz += fz; }
+    if (keyS) { dx -= fx; dy -= fy; dz -= fz; }
+    if (keyD) { dx += rx; dy += ry; dz += rz; }
+    if (keyA) { dx -= rx; dy -= ry; dz -= rz; }
+    if (keyE) { dx += ux; dy += uy; dz += uz; }
+    if (keyQ) { dx -= ux; dy -= uy; dz -= uz; }
 
     // Normalise diagonal speed:
     float len = std::sqrt(dx * dx + dy * dy + dz * dz);

@@ -24,6 +24,7 @@ public:
 
   nanogui::TextBox* bitRateText;
   nanogui::TextBox* frameRateText;
+  nanogui::TextBox* renderTimeText = nullptr;
 
 private:
   FileLookup fileMapping;

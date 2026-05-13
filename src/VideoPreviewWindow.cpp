@@ -5,6 +5,8 @@
 #include <PacketComms.h>
 
 #include <boost/log/trivial.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 
 VideoPreviewWindow::VideoPreviewWindow(
     nanogui::Screen* screen,
@@ -172,4 +174,28 @@ void VideoPreviewWindow::draw(NVGcontext* ctx) {
   }
 
   nanogui::Window::draw(ctx);
+}
+
+std::string VideoPreviewWindow::saveScreenshot(const std::string& path) {
+  if (!videoClient || !texture) return {};
+  int w = videoClient->getFrameWidth();
+  int h = videoClient->getFrameHeight();
+  int channels = texture->channels();
+
+  cv::Mat frame(h, w, (channels == 4 ? CV_8UC4 : CV_8UC3));
+  {
+    std::lock_guard<std::mutex> lock(bufferMutex);
+    std::memcpy(frame.data, bgrBuffer.data(), bgrBuffer.size());
+  }
+  // bgrBuffer is actually in RGB order (see ExtractRgbImage in decodeVideoFrame),
+  // so convert to BGR for OpenCV's imwrite:
+  cv::Mat bgr;
+  cv::cvtColor(frame, bgr,
+               channels == 4 ? cv::COLOR_RGBA2BGR : cv::COLOR_RGB2BGR);
+  if (!cv::imwrite(path, bgr)) {
+    BOOST_LOG_TRIVIAL(warning) << "Failed to write screenshot: " << path;
+    return {};
+  }
+  BOOST_LOG_TRIVIAL(info) << "Saved screenshot: " << path;
+  return path;
 }

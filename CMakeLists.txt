@@ -30,7 +30,9 @@ add_subdirectory(external/videolib)
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${NANOGUI_EXTRA_INCS} ${PACKETCOMMS_INCLUDES} ${VIDEOLIB_INCLUDES})
 
-# Build the interface app:
+# ============================================================================
+#   remote-ui  — nanogui-based client (original, kept as stable fallback)
+# ============================================================================
 file(GLOB_RECURSE SRC ${PROJECT_SOURCE_DIR}/src/*.hpp ${PROJECT_SOURCE_DIR}/src/*.cpp)
 add_executable(remote-ui ${SRC})
 target_link_libraries(
@@ -43,3 +45,61 @@ target_link_libraries(
 )
 
 target_compile_definitions(remote-ui PRIVATE -DBOOST_LOG_DYN_LINK)
+
+# ============================================================================
+#   remote-ui-imgui  — Dear ImGui-based client (optional, game-style controls)
+# ============================================================================
+option(BUILD_IMGUI_UI "Build the Dear ImGui variant of the remote UI" OFF)
+
+if(BUILD_IMGUI_UI)
+  set(IMGUI_DIR ${PROJECT_SOURCE_DIR}/external/imgui
+      CACHE PATH "Path to a local clone of ocornut/imgui")
+  if(NOT EXISTS ${IMGUI_DIR}/imgui.cpp)
+    message(FATAL_ERROR
+      "BUILD_IMGUI_UI=ON but could not find imgui.cpp at ${IMGUI_DIR}.\n"
+      "Clone it with:\n"
+      "  git clone --depth 1 --branch v1.90.5 https://github.com/ocornut/imgui.git external/imgui\n"
+      "or pass -DIMGUI_DIR=/path/to/imgui to cmake.")
+  endif()
+  message(STATUS "Using ImGui at ${IMGUI_DIR}")
+
+  # ImGui does not ship a CMakeLists — build the core + the GLFW/OpenGL backend
+  # as a static lib here.
+  add_library(imgui_core STATIC
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+  )
+  target_include_directories(imgui_core PUBLIC
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
+  )
+  # Reuse the GLFW that nanogui already builds:
+  target_link_libraries(imgui_core PUBLIC glfw ${OPENGL_LIBRARIES})
+
+  file(GLOB_RECURSE IMGUI_SRC
+       ${PROJECT_SOURCE_DIR}/src_imgui/*.hpp
+       ${PROJECT_SOURCE_DIR}/src_imgui/*.cpp)
+  # Re-use the non-UI pieces of the original build (packet descriptions, video
+  # capture from the Kinect, etc.) — they have no nanogui dependency:
+  list(APPEND IMGUI_SRC
+       ${PROJECT_SOURCE_DIR}/src/VideoClient.cpp
+       ${PROJECT_SOURCE_DIR}/src/VideoCapture.cpp)
+
+  add_executable(remote-ui-imgui ${IMGUI_SRC})
+  target_include_directories(remote-ui-imgui PRIVATE ${PROJECT_SOURCE_DIR}/src)
+  target_link_libraries(
+    remote-ui-imgui
+    imgui_core
+    Boost::program_options Boost::log
+    ${OPENGL_LIBRARIES}
+    ${PACKETCOMMS_LIBRARIES} ${VIDEOLIB_LIBRARIES}
+    ${OpenCV_LIBS}
+    k4a::k4a
+  )
+  target_compile_definitions(remote-ui-imgui PRIVATE -DBOOST_LOG_DYN_LINK)
+endif()

@@ -24,6 +24,10 @@ public:
 
   void reset() { imageView->reset(); }
 
+  // Save the most-recently-decoded frame to a PNG.
+  // Returns the path on success, empty string on failure.
+  std::string saveScreenshot(const std::string& path);
+
   void setRawBufferData(std::vector<float>& buffer) {
     rawBuffer = buffer;
   }

@@ -39,6 +39,10 @@ private:
   // does not move.
   bool lookDragActive = false;
 
+  // When true, mouse DOWN tilts the camera UP (flight-sim / inverted-Y style).
+  // Toggle at runtime with the Y key.
+  bool invertPitch = true;
+
   // Timing for frame-rate-independent movement:
   double lastDrawTime = 0.0;
 

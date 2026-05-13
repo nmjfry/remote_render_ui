@@ -11,6 +11,7 @@
 
 #include <iomanip>
 #include <fstream>
+#include <ctime>
 
 std::uint32_t convertSampleValue(float value) {
   // Maximum of 16 otherwise latency will be too high:
@@ -40,8 +41,10 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   fovSlider->set_callback([&](float value) {
     serialise(sender, "fov", value * 360.f);
   });
-  fovSlider->set_value(90.f / 360.f);
-  fovSlider->callback()(fovSlider->value());
+  fovSlider->set_value(60.f / 360.f);
+  // Do NOT fire the callback here — that would push the client's default to
+  // the server and clobber any CLI-provided value (e.g. from --from-pose).
+  // The "fov" subscriber below will update the slider when the server broadcasts.
   add_widget("Field of View", fovSlider);
 
   // Subscribe to FOV updates from the server (on start-up the server can decide the initial value):
@@ -133,6 +136,25 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   frameRateText->set_alignment(nanogui::TextBox::Alignment::Right);
   add_widget("Frame rate:", frameRateText);
 
+  renderTimeText = new nanogui::TextBox(window, "-");
+  renderTimeText->set_editable(false);
+  renderTimeText->set_units("ms");
+  renderTimeText->set_alignment(nanogui::TextBox::Alignment::Right);
+  add_widget("Render time:", renderTimeText);
+
+  // Subscribe to render_time (server-measured render duration in ms).
+  // We smooth with an EMA since the raw values are quite noisy frame-to-frame.
+  subs["render_time"] = receiver.subscribe("render_time",
+    [this](const ComPacket::ConstSharedPacket& packet) {
+      static float smoothed = 0.f;
+      float ms = 0.f;
+      deserialise(packet, ms);
+      smoothed = 0.9f * smoothed + 0.1f * ms;
+      std::stringstream ss;
+      ss << std::fixed << std::setprecision(2) << smoothed;
+      if (renderTimeText) renderTimeText->set_value(ss.str());
+    });
+
   // Status/stop button:
   add_group("Render Status");
 
@@ -147,6 +169,21 @@ ControlsForm::ControlsForm(nanogui::Screen* screen,
   });
   deviceChooser->set_font_size(16);
   add_widget("Choose render device: ", deviceChooser);
+
+  add_button("Screenshot", [this, &sender]() {
+    if (!preview) return;
+    std::time_t t = std::time(nullptr);
+    char tbuf[32];
+    std::strftime(tbuf, sizeof(tbuf), "%Y%m%d-%H%M%S", std::localtime(&t));
+    std::string path = std::string("screenshot-") + tbuf + ".png";
+    auto written = preview->saveScreenshot(path);
+    if (written.empty()) {
+      BOOST_LOG_TRIVIAL(warning) << "Screenshot failed";
+    }
+    // Ask the server to also dump its framebuffer + pose JSON; gpu_watch.py
+    // will turn that JSON into a matching GPU reference render.
+    serialise(sender, "screenshot", true);
+  })->set_tooltip("Save the current frame as a PNG and request a paired GPU render.");
 
   add_button("Stop", [screen, &sender]() {
     serialise(sender, "stop", true);
