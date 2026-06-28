@@ -7,7 +7,9 @@
 
 #include "ControlsForm.hpp"
 #include "VideoPreviewWindow.hpp"
-#include "VideoCapture.hpp"
+#if defined(ENABLE_KINECT)
+#include "VideoCapture.hpp"  // pulls in <k4a/k4a.h>; only when Kinect is enabled
+#endif
 
 /// A screen containing all the application's other windows.
 class RenderClientApp : public nanogui::Screen {

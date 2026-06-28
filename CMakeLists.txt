@@ -4,9 +4,16 @@ project(remote-ui)
 
 find_package(OpenGL REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options log)
-find_package( k4a REQUIRED )
-
 find_package(OpenCV REQUIRED)
+
+# Azure Kinect (k4a) frame capture is an optional feature (host-side webcam-style
+# capture). It is OFF by default so the clients build on any machine without the
+# Azure Kinect SDK installed. The viewer streams video from the render server
+# over TCP and does not need this. Enable with -DENABLE_KINECT=ON.
+option(ENABLE_KINECT "Build with Azure Kinect (k4a) capture support" OFF)
+if(ENABLE_KINECT)
+  find_package(k4a REQUIRED)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -34,6 +41,12 @@ include_directories(${OpenCV_INCLUDE_DIRS} ${NANOGUI_EXTRA_INCS} ${PACKETCOMMS_I
 #   remote-ui  — nanogui-based client (original, kept as stable fallback)
 # ============================================================================
 file(GLOB_RECURSE SRC ${PROJECT_SOURCE_DIR}/src/*.hpp ${PROJECT_SOURCE_DIR}/src/*.cpp)
+if(NOT ENABLE_KINECT)
+  # VideoCapture is the only k4a-dependent unit; drop it when Kinect is off.
+  list(REMOVE_ITEM SRC
+       ${PROJECT_SOURCE_DIR}/src/VideoCapture.cpp
+       ${PROJECT_SOURCE_DIR}/src/VideoCapture.hpp)
+endif()
 add_executable(remote-ui ${SRC})
 target_link_libraries(
   remote-ui
@@ -41,10 +54,13 @@ target_link_libraries(
   ${NANOGUI_EXTRA_LIBS} ${OPENGL_LIBRARIES}
   ${PACKETCOMMS_LIBRARIES} ${VIDEOLIB_LIBRARIES}
   ${OpenCV_LIBS}
-  k4a::k4a
 )
 
 target_compile_definitions(remote-ui PRIVATE -DBOOST_LOG_DYN_LINK)
+if(ENABLE_KINECT)
+  target_link_libraries(remote-ui k4a::k4a)
+  target_compile_definitions(remote-ui PRIVATE -DENABLE_KINECT)
+endif()
 
 # ============================================================================
 #   remote-ui-imgui  — Dear ImGui-based client (optional, game-style controls)
@@ -79,16 +95,18 @@ if(BUILD_IMGUI_UI)
     ${IMGUI_DIR}/backends
   )
   # Reuse the GLFW that nanogui already builds:
-  target_link_libraries(imgui_core PUBLIC glfw ${OPENGL_LIBRARIES})
+  target_link_libraries(imgui_core PUBLIC glfw ${OPENGL_LIBRARIES} ${CMAKE_DL_LIBS})
 
   file(GLOB_RECURSE IMGUI_SRC
        ${PROJECT_SOURCE_DIR}/src_imgui/*.hpp
        ${PROJECT_SOURCE_DIR}/src_imgui/*.cpp)
-  # Re-use the non-UI pieces of the original build (packet descriptions, video
-  # capture from the Kinect, etc.) — they have no nanogui dependency:
-  list(APPEND IMGUI_SRC
-       ${PROJECT_SOURCE_DIR}/src/VideoClient.cpp
-       ${PROJECT_SOURCE_DIR}/src/VideoCapture.cpp)
+  # Re-use the non-UI pieces of the original build (packet descriptions, TCP
+  # video client, etc.) — they have no nanogui dependency. The ImGui client
+  # receives video over TCP (VideoClient) and never uses the Kinect path.
+  list(APPEND IMGUI_SRC ${PROJECT_SOURCE_DIR}/src/VideoClient.cpp)
+  if(ENABLE_KINECT)
+    list(APPEND IMGUI_SRC ${PROJECT_SOURCE_DIR}/src/VideoCapture.cpp)
+  endif()
 
   add_executable(remote-ui-imgui ${IMGUI_SRC})
   target_include_directories(remote-ui-imgui PRIVATE ${PROJECT_SOURCE_DIR}/src)
@@ -99,7 +117,10 @@ if(BUILD_IMGUI_UI)
     ${OPENGL_LIBRARIES}
     ${PACKETCOMMS_LIBRARIES} ${VIDEOLIB_LIBRARIES}
     ${OpenCV_LIBS}
-    k4a::k4a
   )
   target_compile_definitions(remote-ui-imgui PRIVATE -DBOOST_LOG_DYN_LINK)
+  if(ENABLE_KINECT)
+    target_link_libraries(remote-ui-imgui k4a::k4a)
+    target_compile_definitions(remote-ui-imgui PRIVATE -DENABLE_KINECT)
+  endif()
 endif()

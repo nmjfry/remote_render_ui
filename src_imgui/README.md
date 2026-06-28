@@ -9,24 +9,22 @@ camera controls:
 - **Shift** to sprint.
 - **Space** to reset pose.
 
-Wire protocol is identical to the nanogui client — it sends `X`, `Y`, `Z`,
+The wire protocol is identical to the nanogui client: it sends `X`, `Y`, `Z`,
 `env_rotation` (pitch), `env_rotation_2` (yaw), `fov`, `device`, `stop`, and
 `detach` packets to the server.
 
 ## Building
 
-The ImGui variant is **off by default** (the first configure clones ImGui from
-GitHub via CMake FetchContent and can take a while on slow networks). Turn it
-on with:
+The ImGui variant is **off by default**. Turn it on at configure time:
 
 ```bash
-cd ~/splatting/nf20_splatting/remote_render_ui/build
-cmake .. -DBUILD_IMGUI_UI=ON
-make -j$(nproc) remote-ui-imgui
+cmake -G Ninja -S . -B build -DBUILD_IMGUI_UI=ON
+ninja -C build remote-ui-imgui
 ```
 
 Both binaries (`remote-ui` and `remote-ui-imgui`) coexist when built. The
-nanogui client remains the stable fallback.
+nanogui client remains the stable fallback. See the top-level `README.md` for
+the full dependency list and clone-and-run steps.
 
 ## Running
 
@@ -35,13 +33,11 @@ nanogui client remains the stable fallback.
 ```
 
 All the usual options (`--host`, `--port`, `--width`, `--height`, `--log-level`)
-are supported. The Kinect capture path and NIF path JSON are **not** wired in
-yet — if you need those, use the nanogui `remote-ui` for now.
+are supported. The Kinect capture path and NIF path JSON are not wired in yet; if you need
+those, use the nanogui `remote-ui` for now.
 
 ## Dependencies
 
-ImGui is fetched automatically via CMake `FetchContent` from
-`github.com/ocornut/imgui` (v1.90.5). No submodule setup needed.
-
-GLFW is reused from the nanogui subproject (same OpenGL context setup that
-nanogui uses).
+ImGui is vendored as a git submodule at `external/imgui` (pulled in by
+`git clone --recursive`). GLFW is reused from the nanogui subproject (same
+OpenGL context setup that nanogui uses).
